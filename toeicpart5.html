@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOEIC Part 5 Practice (Random 10)</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            background-color: #0056b3;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .progress {
+            text-align: right;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .question-text {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .options {
+            list-style: none;
+            padding: 0;
+        }
+        .options li {
+            margin-bottom: 10px;
+        }
+        .options button {
+            width: 100%;
+            text-align: left;
+            padding: 12px;
+            border: 1px solid #ddd;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 1em;
+            transition: background 0.2s;
+        }
+        .options button:hover {
+            background-color: #e9ecef;
+        }
+        /* 正解・不正解のスタイル */
+        .correct-opt {
+            background-color: #d4edda !important;
+            border-color: #c3e6cb !important;
+            color: #155724;
+        }
+        .wrong-opt {
+            background-color: #f8d7da !important;
+            border-color: #f5c6cb !important;
+            color: #721c24;
+        }
+        
+        /* 解説エリア */
+        .explanation-area {
+            display: none; /* 最初は隠す */
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px dashed #ccc;
+            background-color: #fffbe6;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+            color: #0056b3;
+        }
+        .btn-next {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #28a745;
+            color: white;
+            text-align: center;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .btn-next:hover {
+            background-color: #218838;
+        }
+        .hidden { display: none; }
+        
+        /* 結果画面 */
+        #result-screen {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>TOEIC Part 5 Practice</h1>
+    <p>ランダム10問チャレンジ</p>
+</header>
+
+<div id="start-screen" class="card" style="text-align: center;">
+    <h2>準備はいいですか？</h2>
+    <p>全問題プールからランダムに10問出題されます。</p>
+    <button onclick="startQuiz()" class="btn-next">スタート</button>
+</div>
+
+<div id="quiz-container" class="hidden">
+    <div class="progress">Question <span id="current-num">1</span> / 10</div>
+    
+    <div class="card">
+        <div class="question-text" id="question-text">
+            </div>
+        <ul class="options" id="options-list">
+            </ul>
+
+        <div class="explanation-area" id="explanation-area">
+            <span class="label">【正解】</span> <span id="ans-key"></span>
+            <span class="label">【日本語訳】</span> <span id="ans-trans"></span>
+            <span class="label">【解説】</span> <span id="ans-expl"></span>
+        </div>
+    </div>
+
+    <button id="next-btn" class="btn-next hidden" onclick="nextQuestion()">次の問題へ</button>
+</div>
+
+<div id="result-screen" class="hidden card">
+    <h2>終了！</h2>
+    <p>お疲れ様でした。</p>
+    <p>あなたのスコア: <span id="score-display" style="font-size: 2em; font-weight:bold; color:#0056b3;"></span> / 10</p>
+    <button onclick="location.reload()" class="btn-next">もう一度挑戦する</button>
+</div>
+
+<script>
+    // ---------------------------------------------------------
+    // 問題データ（合計25問が統合されました）
+    // ---------------------------------------------------------
+    const questionPool = [
+        {
+            id: 1,
+            text: "Mr. Tanaka ------- the annual report before the meeting started.",
+            options: ["review", "reviewed", "reviews", "reviewing"],
+            correctIndex: 1, 
+            translation: "田中氏は会議が始まる前に年次報告書を確認した。",
+            explanation: "空所には動詞が必要です。「before the meeting started（会議が始まる前に）」という過去の時制に合わせて、過去形の(B) reviewedが適切です。"
+        },
+        {
+            id: 2,
+            text: "The new software is significantly more ------- than the previous version.",
+            options: ["efficiency", "efficient", "efficiently", "efficiencies"],
+            correctIndex: 1,
+            translation: "新しいソフトウェアは以前のバージョンよりも著しく効率的だ。",
+            explanation: "be動詞(is)の後ろで、moreの後には形容詞が必要です。(B) efficient（効率的な）が正解。efficiencyは名詞、efficientlyは副詞です。"
+        },
+        {
+            id: 3,
+            text: "All employees are required to attend the safety workshop, ------- of their department.",
+            options: ["regarding", "regardless", "regard", "regards"],
+            correctIndex: 1,
+            translation: "全従業員は、部署に関わらず安全講習会への参加が求められている。",
+            explanation: "「～に関わらず」という意味の熟語 regardless of が適切です。(B)が正解。"
+        },
+        {
+            id: 4,
+            text: "Please ------- the attached document for the detailed itinerary.",
+            options: ["see", "look", "watch", "view"],
+            correctIndex: 0,
+            translation: "詳細な旅程については、添付の書類をご覧ください。",
+            explanation: "「（書類などを）参照する、見る」という意味では see または refer to が使われます。lookは look at、watchは動くものを見る際に使います。(A)が正解。"
+        },
+        {
+            id: 5,
+            text: "The construction of the new bridge is strictly on -------.",
+            options: ["schedule", "time", "date", "calendar"],
+            correctIndex: 0,
+            translation: "新しい橋の建設は厳密に予定通りに進んでいる。",
+            explanation: "on schedule で「予定通りに」という定型表現です。(A)が正解。"
+        },
+        {
+            "id": "Q006",
+            "text": "The company's new recycling initiative will be implemented in all regional offices ------- the end of the fiscal quarter.",
+            "options": ["until", "since", "by", "for"],
+            "correctIndex": 2,
+            "translation": "その会社の新しいリサイクル計画は、会計四半期の終わりまでに全ての地域支店で実施される予定です。",
+            "explanation": "空所には「〜までに」という期限を示す前置詞が必要です。byは期限を表し、未来の特定の時点までに完了することを示します。until（〜までずっと）は動作の継続を表すため不適です。"
+        },
+        {
+            "id": "Q007",
+            "text": "The marketing team's strategy was highly -------, resulting in a 20% increase in online sales.",
+            "options": ["success", "succeed", "successful", "successfully"],
+            "correctIndex": 2,
+            "translation": "マーケティングチームの戦略は非常に成功し、その結果、オンライン売上が20%増加しました。",
+            "explanation": "be動詞(was)の後ろで、副詞(highly)に修飾され、主語(strategy)の状態を表す形容詞が必要です。successful（成功した）が正解です。"
+        },
+        {
+            "id": "Q008",
+            "text": "Applicants must submit two letters of ------- from former employers or professors.",
+            "options": ["reference", "referral", "referee", "refer"],
+            "correctIndex": 0,
+            "translation": "応募者は、以前の雇用主または教授からの2通の推薦状を提出しなければなりません。",
+            "explanation": "letters of referenceで「推薦状」という意味の複合名詞（熟語）になります。refereeは推薦人または審判、referralは紹介状・委託を意味します。"
+        },
+        {
+            "id": "Q009",
+            "text": "The presentation clearly ------- the key features of the upcoming product launch.",
+            "options": ["outlining", "outlined", "outlines", "outline"],
+            "correctIndex": 1,
+            "translation": "そのプレゼンテーションは、間近に迫った製品発売の主要な特徴を明確に概説しました。",
+            "explanation": "主語(The presentation)と目的語(the key features...)があるので、空所には過去の出来事を表す他動詞の過去形が必要です。outlines（三単現のs）だと時制の整合性が低く、outlined（概説した）が最も適切です。"
+        },
+        {
+            "id": "Q010",
+            "text": "Due to the storm, the delivery of office supplies has been temporarily -------.",
+            "options": ["postponed", "delayed", "put", "suspended"],
+            "correctIndex": 3,
+            "translation": "嵐のため、事務用品の配送は一時的に中断されています。",
+            "explanation": "配送という行為の「一時的な中断」には suspended が最も自然です。postponed（延期された）は具体的な日にちへの変更、delayed（遅延した）は時間的な遅れを指します。"
+        },
+        {
+            "id": "Q011",
+            "text": "The manager asked the team to ------- the project proposal before submitting it to the board.",
+            "options": ["review", "to review", "reviewed", "reviews"],
+            "correctIndex": 0,
+            "translation": "マネージャーは、プロジェクト提案書を役員会に提出する前に、チームにそれを見直すように頼みました。",
+            "explanation": "ask O to do (Oに〜するように頼む) の構文が基本ですが、この文では ask the team (to review) ... のto reviewが省略された形と考えられます。しかし、ここでは原形不定詞の review が動詞 asked の目的語として使われることを考慮し、動詞の原形 (A) review が適切です。"
+        },
+        {
+            "id": "Q012",
+            "text": "The merger will create one of the most financially ------- corporations in the industry.",
+            "options": ["sound", "sounds", "sounded", "sounding"],
+            "correctIndex": 0,
+            "translation": "その合併は、業界で最も財政的に健全な企業の一つを生み出すでしょう。",
+            "explanation": "financiallyという副詞の後に形容詞が必要です。soundには「健全な、確かな」という意味の形容詞があり、 financially sound で「財政的に健全な」という意味になります。"
+        },
+        {
+            "id": "Q013",
+            "text": "The new security policy is designed to protect customer data ------- unauthorized access.",
+            "options": ["against", "over", "within", "through"],
+            "correctIndex": 0,
+            "translation": "新しいセキュリティポリシーは、不正なアクセスから顧客データを守るために設計されています。",
+            "explanation": "protect A against B で「BからAを守る」という意味になり、前置詞 (A) against が適切です。"
+        },
+        {
+            "id": "Q014",
+            "text": "Before using the industrial printer, please familiarize ------- with the operating manual.",
+            "options": ["yours", "yourself", "your", "yourselves"],
+            "correctIndex": 1,
+            "translation": "業務用プリンターを使用する前に、操作マニュアルで使い方をよく理解してください。",
+            "explanation": "familiarize A with B（AにBを熟知させる）という動詞句で、主語が命令文の you であるため、目的語には再帰代名詞 (B) yourself が必要です。"
+        },
+        {
+            "id": "Q015",
+            "text": "Due to unexpectedly high enrollment, the university decided to add an ------- section to the chemistry course.",
+            "options": ["extra", "surplus", "redundant", "excessive"],
+            "correctIndex": 0,
+            "translation": "予想外に登録者が多かったため、大学は化学の授業に追加のクラスを設けることにしました。",
+            "explanation": "「追加の」という意味の形容詞 (A) extra が最も自然です。surplus（余剰の）、redundant（余分な、不必要な）、excessive（過度の）は文脈に合いません。"
+        },
+        {
+            "id": "Q016",
+            "text": "The company's new policy dictates that all reimbursement claims must be submitted ------- 30 days of the expense being incurred.",
+            "options": ["within", "among", "despite", "beyond"],
+            "correctIndex": 0,
+            "translation": "会社の新しい規定では、すべての払い戻し請求は費用が発生してから30日以内に提出されなければならないと定められています。",
+            "explanation": "期間の制限を示すには「〜以内に」を意味する前置詞 (A) within が適切です。amongは3者以上の中、despiteは〜にもかかわらず、beyondは〜を超えて、という意味で文脈に合いません。"
+        },
+        {
+            "id": "Q017",
+            "text": "We need to find a more ------- solution to our production issues to reduce long-term costs.",
+            "options": ["effect", "effective", "effectively", "effected"],
+            "correctIndex": 1,
+            "translation": "長期的なコストを削減するため、生産上の問題に対するより効果的な解決策を見つける必要があります。",
+            "explanation": "名詞 solution を修飾する形容詞が必要です。moreに続く形容詞 (B) effective（効果的な）が正解です。effectは名詞、effectivelyは副詞です。"
+        },
+        {
+            "id": "Q018",
+            "text": "The seminar was beneficial, ------- the limited time available for questions and answers.",
+            "options": ["even though", "in spite of", "consequently", "nevertheless"],
+            "correctIndex": 1,
+            "translation": "質問と回答に使える時間が限られていたにもかかわらず、そのセミナーは有益でした。",
+            "explanation": "「〜にもかかわらず」という意味で、後ろに名詞句（the limited time...）を伴う前置詞句 (B) in spite of が適切です。even though（接続詞）、consequently/nevertheless（副詞）は文型が合いません。"
+        },
+        {
+            "id": "Q019",
+            "text": "Please remember to ------- your badge at the entrance before proceeding to the main conference hall.",
+            "options": ["swiped", "swiping", "swipe", "to swipe"],
+            "correctIndex": 2,
+            "translation": "メインの会議場に進む前に、入口で必ずバッジをスワイプ（かざすなど）してください。",
+            "explanation": "remember to do（〜することを忘れないで）という構文で、toの後に続く動詞の原形 (C) swipe が正解です。"
+        },
+        {
+            "id": "Q020",
+            "text": "The restaurant is popular ------- its unique blend of traditional and modern cuisine.",
+            "options": ["due to", "in spite of", "regarding", "unless"],
+            "correctIndex": 0,
+            "translation": "そのレストランは、伝統的料理と現代料理の独自の融合で人気があります。",
+            "explanation": "「〜が理由で、〜のおかげで」という意味を表し、後ろに名詞句を伴う前置詞句 (A) due to が適切です。"
+        },
+        {
+            "id": "Q021",
+            "text": "The board of directors is currently reviewing several proposals for the ------- of the new factory.",
+            "options": ["locates", "location", "locate", "locating"],
+            "correctIndex": 1,
+            "translation": "取締役会は現在、新工場の場所に関するいくつかの提案を審査しています。",
+            "explanation": "前置詞 for の目的語として名詞が必要です。「工場の場所」という意味を表す (B) location が正解です。locates/locateは動詞、locatingは動名詞または現在分詞です。"
+        },
+        {
+            "id": "Q022",
+            "text": "All employees who wish to attend the advanced training session must register -------.",
+            "options": ["prompt", "promptly", "prompter", "promptness"],
+            "correctIndex": 1,
+            "translation": "上級トレーニングセッションへの参加を希望する全従業員は、速やかに登録しなければなりません。",
+            "explanation": "動詞 register（登録する）を修飾する副詞が必要です。「速やかに」を意味する (B) promptly が正解です。"
+        },
+        {
+            "id": "Q023",
+            "text": "Please be advised that the maintenance work will continue ------- 6:00 PM tomorrow.",
+            "options": ["until", "since", "during", "while"],
+            "correctIndex": 0,
+            "translation": "整備作業は明日の午後6時まで続く予定ですので、ご注意ください。",
+            "explanation": "動作が特定の時点まで継続することを示す前置詞 (A) until が適切です。sinceは過去のある時点から継続、duringは期間中、whileは接続詞で文を繋ぎます。"
+        },
+        {
+            "id": "Q024",
+            "text": "The newly hired technician proved to be highly ------- in troubleshooting network issues.",
+            "options": ["competent", "competence", "competently", "competitors"],
+            "correctIndex": 0,
+            "translation": "新しく採用された技術者は、ネットワークの問題解決において非常に有能であることが証明されました。",
+            "explanation": "be動詞(to be)の後ろで、副詞(highly)に修飾され、主語の状態を表す形容詞が必要です。(A) competent（有能な）が正解です。competenceは名詞です。"
+        },
+        {
+            "id": "Q025",
+            "text": "Management announced that the quarterly profits were considerably ------- than predicted.",
+            "options": ["high", "higher", "highly", "highest"],
+            "correctIndex": 1,
+            "translation": "経営陣は、四半期ごとの利益が予測されていたよりもかなり高かったと発表しました。",
+            "explanation": "比較を表す than があるため、比較級が必要です。(B) higher が正解です。considerably（かなり）は比較級を強調する副詞です。"
+        }
+    ];
+
+    // ---------------------------------------------------------
+    // システムのロジック部分
+    // ---------------------------------------------------------
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let score = 0;
+
+    // 配列をシャッフルする関数
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // クイズ開始
+    function startQuiz() {
+        // 全問題プールからランダムにシャッフルして先頭10問を取得
+        // ※問題数が10問未満の場合はあるだけ出題
+        const shuffledPool = shuffle([...questionPool]); 
+        currentQuestions = shuffledPool.slice(0, 10);
+        
+        currentIndex = 0;
+        score = 0;
+        
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('quiz-container').classList.remove('hidden');
+        
+        loadQuestion();
+    }
+
+    // 問題の読み込み
+    function loadQuestion() {
+        const q = currentQuestions[currentIndex];
+        
+        document.getElementById('current-num').textContent = currentIndex + 1;
+        document.getElementById('question-text').textContent = q.text;
+        
+        // 解説エリアをリセット
+        document.getElementById('explanation-area').style.display = 'none';
+        document.getElementById('next-btn').classList.add('hidden');
+
+        // 選択肢の生成
+        const optionsList = document.getElementById('options-list');
+        optionsList.innerHTML = '';
+        
+        q.options.forEach((opt, index) => {
+            const li = document.createElement('li');
+            const btn = document.createElement('button');
+            btn.textContent = `(${String.fromCharCode(65 + index)}) ${opt}`; // (A) xxx の形式
+            btn.onclick = () => checkAnswer(index, btn);
+            li.appendChild(btn);
+            optionsList.appendChild(li);
+        });
+    }
+
+    // 解答判定
+    function checkAnswer(selectedIndex, btnElement) {
+        const q = currentQuestions[currentIndex];
+        const buttons = document.querySelectorAll('.options button');
+        
+        // ボタンを無効化（連打防止）
+        buttons.forEach(b => b.disabled = true);
+
+        if (selectedIndex === q.correctIndex) {
+            btnElement.classList.add('correct-opt');
+            score++;
+        } else {
+            btnElement.classList.add('wrong-opt');
+            // 正解のボタンも光らせる
+            buttons[q.correctIndex].classList.add('correct-opt');
+        }
+
+        // 解説の表示
+        document.getElementById('ans-key').textContent = `(${String.fromCharCode(65 + q.correctIndex)}) ${q.options[q.correctIndex]}`;
+        document.getElementById('ans-trans').textContent = q.translation;
+        document.getElementById('ans-expl').textContent = q.explanation;
+        document.getElementById('explanation-area').style.display = 'block';
+        
+        // 次へボタン表示
+        document.getElementById('next-btn').classList.remove('hidden');
+    }
+
+    // 次の問題へ
+    function nextQuestion() {
+        currentIndex++;
+        if (currentIndex < currentQuestions.length) {
+            loadQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    // 結果表示
+    function showResult() {
+        document.getElementById('quiz-container').classList.add('hidden');
+        document.getElementById('result-screen').classList.remove('hidden');
+        document.getElementById('score-display').textContent = score;
+    }
+</script>
+
+</body>
+</html>
